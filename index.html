@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Sample illustrating the use of Basic Service Worker.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>LearnWords2-SWapp</title>
+    <script>
+      // Add a global error event listener early on in the page load, to help ensure that browsers
+      // which don't support specific functionality still end up displaying a meaningful message.
+
+      window.addEventListener('error', function(error) {
+        if (ChromeSamples && ChromeSamples.setStatus) {
+          console.error(error);
+          ChromeSamples.setStatus(error.message + ' (Your browser may not support this feature.)');
+          error.preventDefault();
+        }
+      });
+    </script>
+    
+    
+    <link rel="stylesheet" href="styles.css">
+    
+  </head>
+ 
+
+
+
+
+
+
+
+
+
+
+<body>
+
+<!-- ===================================================================================== -->
+    
+<h1 id="title">LearnWords2 18d 0.2.3beta</h1>
+
+
+<!--  - - - - - - - - -   -->
+<!--  Menu for screens    -->
+<!--  http://purecss.io/  -->
+<!--  - - - - - - - - -   -->
+
+<div class="pure-menu pure-menu-horizontal">
+  <!--        <a href="#" class="pure-menu-heading pure-menu-link">LW</a> -->
+
+          <ul class="pure-menu-list">
+
+              <li class="pure-menu-item"><a href="#" class="pure-menu-link" id="repeatMenu">Repeat</a></li>
+
+              <li class="pure-menu-item"><a href="#" class="pure-menu-link" id="settingsMenu">Settings</a></li>
+
+              <li class="pure-menu-item"><a href="#" class="pure-menu-link" id="dbloadMenu">DBload</a></li>
+
+              <li class="pure-menu-item"><a href="#" class="pure-menu-link" id="helpMenu">Help</a></li>
+
+          </ul>
+</div>
+
+<!-- ===================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+<!-- ===================================================================================== -->
+<article id="settingsScreen">
+
+<div>
+<a class="pure-button pure-button-primary" id="numberOfWords">lw.db.numberOfWords()</a>&nbsp;
+
+<a class="pure-button pure-button-primary" id="wordsToRepeat">lw.wordsToRepeat()</a>&nbsp;
+
+<a class="pure-button pure-button-primary" id="getAnswerOptions">lw.getAnswerOptions()</a>&nbsp;
+</div>
+
+<div>
+<a class="pure-button pure-button-primary" id="allWords">lw.db.allWords()</a>&nbsp;
+
+<a class="pure-button pure-button-primary" id="removeWords">lw.db.removeWords()</a>&nbsp;
+
+<a class="pure-button pure-button-primary" id="destroy">lw.db.destroy()</a>&nbsp;
+
+</div>
+
+
+<div>
+<a class="pure-button pure-button-primary" id="labelsBtn">set API labels</a>&nbsp;
+</div>
+
+
+<div id="settingsLog"></div>
+
+</article>
+
+<!-- ===================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ===================================================================================== -->
+<article id="repeatScreen">
+
+<section id="toolbar">
+<a class="pure-button pure-button-primary" id="question">lw.question()</a>&nbsp;
+<a class="pure-button" id="answer">lw.answer()</a>&nbsp;
+<a class="pure-button pure-button-primary" id="moveFd">lw.moveQuestionForward()</a>&nbsp;
+<a class="pure-button" id="moveBw">lw.moveQuestionBackwards()</a>
+</section>
+
+
+<section id="contentArea">
+<div id="content"></div>
+<div id="log"></div>
+</section>
+</article>
+<!-- ===================================================================================== -->
+
+
+
+<!-- ===================================================================================== -->
+<article id="dbloadScreen">
+
+<section>
+<a class="pure-button pure-button-primary" id="removeWords2">lw.db.removeWords()</a>&nbsp;
+</section>
+
+
+<section id="contentAreaLoad">
+
+<textarea style="display: block;" id="allWordsCSVtext" class="pane" cols="80" rows="20"></textarea>
+<div id="contentLoad"></div>
+<div id="logLoad"></div>
+</section>
+
+</article>
+<!-- ===================================================================================== -->
+
+
+
+
+
+<!-- ===================================================================================== -->
+<article id="helpScreen">
+
+<p>
+API demo for the LearnWords2 library (LW.js). This app may be accessed off-line. Version 18b.
+</p>
+
+<p>LW.js version <span id="lwversion">versionString</span></p>
+<p>Default settings "suggestedNumberOfWordsInASession" : <span id="suggestedNumberOfWordsInASession">no</span></p>
+
+
+</article>
+<!-- ===================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+<!-- ===================================================================================== -->
+<!-- Offline app code                                                                     -->
+<!-- ===================================================================================== -->
+<script>
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+
+</script>
+<!-- ===================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ===================================================================================== -->
+<!-- LW library and GUI code                                                                             -->
+<!-- ===================================================================================== -->
+
+
+<script src="math-questions-list.js"></script>
+<script src="LW.js"></script>
+
+
+<script>
+"use strict";
+
+// setup of LearnWords2 box
+
+var lw = LW.BoxOfQuestions(LW.LWdb('learnMath'));
+    if (lw.db.numberOfWords() == 0) {
+			lw.db.loadWords(wordList);
+                        // http://www.csvjson.com/csv2json
+    };
+
+
+
+
+// Creation of GUI
+
+var LWgui = {
+
+    initialize: function() {
+        this.bindEvents();
+        this.showRepeat();
+        console.log("end initialize");  
+    },
+
+
+   bindEvents: function() {
+
+       if (navigator.device==undefined) {// usage in a browser
+             this.attachButtonEvents("click");
+          } else { // usage in mobile device
+             this.attachButtonEvents("touchend")
+       };
+    },
+
+   attachButtonEvents(eventName) 
+                   { console.log(this.question); 
+                    document.querySelector("#question").addEventListener(eventName, this.question, false);
+                    document.querySelector("#answer").addEventListener(eventName, this.answer, false);
+                    document.querySelector("#moveFd").addEventListener(eventName, this.moveQuestionForward, false);
+                    document.querySelector("#moveBw").addEventListener(eventName, this.moveQuestionBackwards, false);
+                    document.querySelector("#removeWords").addEventListener(eventName, this.removeWords, false);
+                    document.querySelector("#destroy").addEventListener(eventName, this.destroy, false);
+                    document.querySelector("#numberOfWords").addEventListener(eventName, this.numberOfWords, false);
+                    document.querySelector("#allWords").addEventListener(eventName, this.allWords, false);
+                    document.querySelector("#wordsToRepeat").addEventListener(eventName, this.wordsToRepeat, false);
+                    document.querySelector("#getAnswerOptions").addEventListener(eventName, this.getAnswerOptions, false);
+		    document.querySelector("#repeatMenu").addEventListener(eventName, this.showRepeat, false);
+                    document.querySelector("#settingsMenu").addEventListener(eventName, this.showSettings, false);
+                    document.querySelector("#dbloadMenu").addEventListener(eventName, this.showDbload, false);
+                    document.querySelector("#helpMenu").addEventListener(eventName, this.showHelp, false);
+                    document.querySelector("#labelsBtn").addEventListener(eventName, this.setLabels, false);
+
+
+                    this.display("log","button events" + eventName +" attached");
+                   },
+
+   
+   question: function() {var q = lw.question();
+                         if (q)
+                           {LWgui.display("settingsLog",JSON.stringify(q));
+                            LWgui.display("log","");
+                            LWgui.display("content", q.word );
+                           } else
+                           {LWgui.display("log","no more questions");
+                            LWgui.display("content", "_" );
+                         }
+                   }, 
+
+
+   answer: function() { LWgui.display("log","");
+			LWgui.display("content",lw.answer() )
+                   }, 
+
+   moveQuestionForward: function() {LWgui.display("log","lw.moveQuestionForward()"); 
+                                    lw.moveQuestionForward();
+                                    
+                                    LWgui.display("content", (lw.question()).word );
+                   }, 
+
+   moveQuestionBackwards: function() {LWgui.display("log","lw.moveQuestionBackwards()"); 
+                                      lw.moveQuestionBackwards();
+
+                                      LWgui.display("content", (lw.question()).word );
+                   },
+
+   removeWords: function() { LWgui.display("settingsLog","lw.db.removeWords()");
+                        lw.db.removeWords();
+			LWgui.display("content","" )
+                   }, 
+   removeWords2: function() { LWgui.display("logLoad","lw.db.removeWords()");
+                        lw.db.removeWords();
+                   }, 
+   destroy: function() { LWgui.display("settingsLog","lw.db.destroy()");
+                        lw.db.destroy();
+			LWgui.display("content","" )
+                   }, 
+   numberOfWords: function() { LWgui.display("settingsLog","lw.db.numberOfWords()=" + lw.db.numberOfWords());
+			LWgui.display("content", "")
+                   }, 
+ 
+   allWords:   function() { LWgui.display("settingsLog","lw.db.allWords()=" + JSON.stringify(lw.db.allWords()));
+			LWgui.display("content", "")
+                   }, 
+
+   wordsToRepeat:   function() { LWgui.display("settingsLog","lw.wordsToRepeat()=" + JSON.stringify(lw.wordsToRepeat()));
+			LWgui.display("content", "")
+                   }, 
+
+   getAnswerOptions:   function() { LWgui.display("settingsLog","lw.getAnswerOptions()=" + JSON.stringify(lw.getAnswerOptions()));
+			LWgui.display("content", "")
+                   }, 
+
+   display: function(id, content) {document.getElementById(id).innerHTML = content;},
+
+
+   showSettings : function () {
+                console.log("display settings");
+		document.getElementById("settingsScreen").style.display="block";
+		document.getElementById("repeatScreen").style.display="none";
+		document.getElementById("dbloadScreen").style.display="none";
+		document.getElementById("helpScreen").style.display="none";
+              },
+
+   showRepeat : function () {
+                console.log("display repeat");
+		document.getElementById("settingsScreen").style.display="none";
+		document.getElementById("repeatScreen").style.display="block";
+		document.getElementById("dbloadScreen").style.display="none";
+                document.getElementById("repeatMenu").classList.add("pure-menu-selected");
+		document.getElementById("helpScreen").style.display="none";
+              },
+   showDbload : function () {
+                console.log("display dbload");
+		document.getElementById("repeatScreen").style.display="none";
+		document.getElementById("settingsScreen").style.display="none";
+		document.getElementById("dbloadScreen").style.display="block";
+		document.getElementById("helpScreen").style.display="none";
+              },
+   showHelp : function () {
+                console.log("display help");
+		document.getElementById("dbloadScreen").style.display="none";
+		document.getElementById("settingsScreen").style.display="none";
+		document.getElementById("repeatScreen").style.display="none";
+		document.getElementById("helpScreen").style.display="block";
+                (document.getElementById("lwversion")).innerHTML = lw.version;
+                var n = (lw.db.getSettings()).suggestedNumberOfWordsInASession;
+                (document.getElementById("suggestedNumberOfWordsInASession")).innerHTML = n;
+              },
+
+   setText : function (id, text) {document.getElementById(id).innerHTML = text;
+                                  document.getElementById(id).style.background = "#88B04B"; // https://www.pantone.com/color-of-the-year-2017-color-standards
+              },
+
+   setLabels : function () {var type  = document.getElementById("labelsBtn").innerHTML;
+                            if (type == "set API labels") { LWgui.setAPILabels();  
+                                 document.getElementById("labelsBtn").innerHTML = "set user labels"}
+                            else { LWgui.setUserLabels();
+                                   document.getElementById("labelsBtn").innerHTML = "set API labels"
+                            }
+            
+              },
+
+   setUserLabels : function () {
+                LWgui.setText("question", "Question");
+                LWgui.setText("answer", "Answer");
+                LWgui.setText("moveFd", "&nbsp;OK&nbsp;");
+                LWgui.setText("moveBw", "Again");
+             },
+
+   setAPILabels : function () {
+                LWgui.setText("question", "lw.question()");
+                LWgui.setText("answer", "lw.answer()");
+                LWgui.setText("moveFd", "lw.moveQuestionForward()");
+                LWgui.setText("moveBw", "lw.moveQuestionBackwards()");
+             }
+};
+
+LWgui.initialize();
+LWgui.setUserLabels();
+
+/*
+document.querySelector('accessById').addEventListener('click', function (ev) {
+    "use strict";
+    var targetNode = ev.target;
+    if (targetNode.tagName.toLowerCase() === 'li') {
+        console.log(targetNode.innerHTML);
+        ev.preventDefault();
+    }
+}, false);
+*/
+
+</script> 
+    
+</body>
+</html>
+
